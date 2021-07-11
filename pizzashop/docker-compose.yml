@@ -1,0 +1,44 @@
+version: '3.5'
+services:
+  db:
+    image: mysql:5.6
+    container_name: signicat_db
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: "signicatdb"
+      MYSQL_ROOT_PASSWORD: "root"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    networks:
+      default:
+        aliases:
+          - signicat-app-db
+
+  
+  django:
+    container_name: signicat_app
+    build: .
+    command: >
+      sh -c "python manage.py wait_for_db &&
+      python manage.py migrate &&
+      python manage.py init_db &&
+      python manage.py runserver 0.0.0.0:8000"
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    restart: always
+    environment:
+      MYSQL_DATABASE: "signicatdb"
+      MYSQL_USER: "root"
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_HOST: "signicat-app-db"
+
+volumes:
+    mysql_data: {}
